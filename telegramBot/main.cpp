@@ -1,8 +1,4 @@
-#include <iostream>
-#include <curl/curl.h>
 #include "Telegram.h"
-
-using namespace std;
 
 int main () {
 
