@@ -16,6 +16,9 @@ public:
 
 	const CURLcode sendMsg(const String& msg);
 
+  Telegram& foo();
+  Telegram& hiThere();
+
 private:
 	
 };
