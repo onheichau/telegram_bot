@@ -1,0 +1,12 @@
+{
+  "configurations": [
+    {
+      "name": "mac db",
+      "type": "lldb",
+      "request": "launch",
+      "program": "${workspaceFolder}/a.out",
+      "args": [],
+      "cwd": "${workspaceFolder}"
+    }
+  ]
+}
