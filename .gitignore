@@ -75,6 +75,6 @@ Temporary Items
 # Built Visual Studio Code Extensions
 *.vsix
 
-a.out.dSYM/*
+*.dSYM/*
 
 *.txt
