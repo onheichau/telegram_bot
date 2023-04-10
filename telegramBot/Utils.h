@@ -1,12 +1,9 @@
-
-#define _CRT_SECURE_NO_WARNINGS
+#ifndef UTILS_UTILS_H__
+#define UTILS_UTILS_H__
 #include <iostream>
-using namespace std;
-#ifndef SDDS_UTILS_H__
-#define SDDS_UTILS_H__
-#include <iostream>
+#include <regex>
 
-namespace sdds {
+namespace utils {
 
   class Utils {
     std::ostream* m_outputPtr{};
@@ -127,8 +124,15 @@ namespace sdds {
     Utils& operator<<(std::istream& istream);
     operator bool();
 
-  };
+    // regex 
 
+    std::string grep(const std::regex& pattern, std::istream& inputFile);
+    std::string grep(const std::regex& pattern, const std::string& data);
+
+    // perform grep -c like operation
+    int grepDashC(const std::regex& pattern , std::istream& inputFile);
+    int grepDashC(const std::regex& pattern , const std::string& inputString);
+  };
   
   extern Utils U;
 

@@ -1,70 +1,44 @@
 #include <iostream>
 #include <fstream>
+#include <regex>
+#include <chrono>
 #include "Environment.h"
 #include "Utils.h"
 
 using namespace std;
-using namespace sdds;
+using namespace utils;
 
 // ============================ private method  ================================
 
-// return a string that contain api, token and chatid in url format
-string Environment::read(const string& fileName) {
-  char WARN_NULLPTR_RETURNED[]{"Warning: no character is read! nullptr is returned!"};
-  ifstream input(fileName);
-  char* data{};
-  U << input;
-
-  if(input.is_open()) {
-    // validate JSON format
-    (input.peek() == '{' && input.ignore(20, ':')) || (cout << "invalid JSON file!");
-    input.ignore(2);
-
-    // fetch api
-    data = U.getString('"', WARN_NULLPTR_RETURNED);
-    m_apiEndPoint += data;
-    input.ignore(20, ':');
-    input.ignore(10, '"');
-    delete[] data; data = nullptr;
-
-    // fetch token
-    data = U.getString('"', WARN_NULLPTR_RETURNED);
-    m_apiEndPoint += data;
-    input.ignore(20, ':');
-    input.ignore(10, '"');
-    delete[] data; data = nullptr;
-
-    // fetch charId
-    data = U.getString('"', WARN_NULLPTR_RETURNED);
-    m_chatId = data;
-
-/* 
-    // ideal approach (to be implemented)
-
-    JsonParser J;
-    J.read("dev.Json");
-
-    m_apiEndPoint += J.getValue("api");
-    m_apiEndPoint += J.getValue("token");
-    m_chatId = J.getValue("chatId");
-
-*/
-
-  } else {
-    cout << "fail to open the file that contain token!";
+size_t Environment::writeResponseToLog_cb(char* chunkBytes, size_t size, size_t numOfMemBlock, ofstream* log) {
+  if(!log->is_open()) {
+    log->open(logFile, ios::app);
   }
-  delete[] data;
-  return m_apiEndPoint;
+  *log << chunkBytes;
+  return size * numOfMemBlock;
+}
+
+size_t Environment::writeResponseToBuffer_cb(char* chunkBytes, size_t size, size_t numOfMemBlock, string* responseBuff) {
+  *responseBuff += chunkBytes;
+  return size * numOfMemBlock;
+}
+
+Environment& Environment::errorCheck() {
+  if(m_result != CURLE_OK) {
+    cerr << "libcurl: error code (" << m_result << ") ";
+    if(m_errBuffer[0]) {
+      m_log << m_errBuffer << endl;
+    } else {
+      m_log << curl_easy_strerror(m_result) << endl;
+    }
+  }
+  return *this;
 }
 
 // ============================ public method   ================================
-
-Environment::Environment(const string& fileName) {
+Environment::Environment() {
   // file that log the received resource
-  m_logPtr = fopen("log.txt", "a");
-
-  // read api and chatid
-  read(fileName);
+  m_log.open(logFile, ios::app);
 
   // curl initialization
   curl_global_init(CURL_GLOBAL_ALL);
@@ -73,14 +47,16 @@ Environment::Environment(const string& fileName) {
   if(!m_curl) {
     throw("fail to initialize!");
   }
+
   // set the IP resolution to IPv4 to prevent mac using ipv6
   curl_easy_setopt(m_curl, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
 
   // set protocol explicitly to have saver operation
   curl_easy_setopt(m_curl, CURLOPT_DEFAULT_PROTOCOL, "https");
 
-  // set to perform POST
-  curl_easy_setopt(m_curl, CURLOPT_CUSTOMREQUEST, "POST");
+  // set the default header for request
+  m_header = curl_slist_append(m_header, "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0");
+  curl_easy_setopt(m_curl, CURLOPT_HTTPHEADER, m_header);
 
   // set detailed error message destination
   curl_easy_setopt(m_curl, CURLOPT_ERRORBUFFER, m_errBuffer);
@@ -88,88 +64,87 @@ Environment::Environment(const string& fileName) {
   // config libcurl to "tell more"
   curl_easy_setopt(m_curl, CURLOPT_VERBOSE, 0);
 
-  // redirect server response to log file from standard output
-  curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, (void*)m_logPtr);
 }
 
 Environment::~Environment() {
-  fclose(m_logPtr);
+  curl_slist_free_all(m_header);
   curl_easy_cleanup(m_curl);
   curl_global_cleanup();
 }
 
-ostream& Environment::errorCheck(ostream& os) const {
-  if(m_result != CURLE_OK) {
-    cerr << "libcurl: error code (" << m_result << ") ";
-    if(m_errBuffer[0]) {
-      os << m_errBuffer << endl;
-    } else {
-      os << curl_easy_strerror(m_result) << endl;
-    }
-  } else {
-    os << "every thing is ok" << endl;
-  }
-  return os;
+string Environment::escapeString(const string& str) {
+  string escaped;
+  char* escapedCstr{};
+  escapedCstr = curl_easy_escape(m_curl, str.c_str(), str.length());
+  escaped = static_cast<string>(escapedCstr);
+  curl_free(escapedCstr);
+  return escaped;
 }
 
-Environment& Environment::createRequest(const string& method, const string& message) {
-  string url;
-  string logMsg;
+const string& Environment::responseBuffer() const {
+  return m_responseBuf;
+}
 
-  url += m_apiEndPoint;
-  url += method;
-  url += '?';
-
-  // form the request body
-  url += m_chatId;
-
-  if(method == "sendMessage") {
-    url += "&text=";
-  } else if(0) {
-    // do something
-  }
-
-  // escape the illegal characters
-  char* escaped = curl_easy_escape(m_curl, message.c_str(), message.length());
-  
-  if(escaped) {
-    url += escaped;
-    curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str());
-
-    logMsg = timeStamp() + "Created request " + url + "\n";
-    writeToLog(logMsg.c_str());
-  } else {
-    cout << "fail to create url!" << endl;
-  }
-  // reclaim resource by easy escape
-  curl_free(escaped);
-
+Environment& Environment::writeToResponseBuffer(const string& data) {
+  m_responseBuf.clear();
+  m_responseBuf = data;
   return *this;
 }
 
-CURLcode Environment::addHeaderMsg(const string& msg) {
-  return m_result;
+Environment& Environment::setOutputToLog() {
+  curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, writeResponseToLog_cb);
+  curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_log);
+  return *this;
 }
 
+Environment& Environment::setOutputToBuffer() {
+  curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, writeResponseToBuffer_cb);
+  curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_responseBuf);
+  return *this;
+}
+
+Environment& Environment::clearResponseBuffer() {
+  m_responseBuf.clear();
+  return *this;
+}
+
+Environment& Environment::createRequest(const string& url) {
+  curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str());
+  m_log << timeStamp() << "created request => " << url << endl;
+  return *this;
+}
+
+
 string Environment::timeStamp() {
+  auto currentTime = chrono::system_clock::now();
+  time_t time = chrono::system_clock::to_time_t(currentTime);
   string timeStamp;
   timeStamp += "[";
-  timeStamp += __TIMESTAMP__;
-  timeStamp += "] ";
+  timeStamp += ctime(&time);
+  timeStamp[timeStamp.length() - 1] = ']';
+  timeStamp += " ";
   return timeStamp;
 }
 
-Environment& Environment::writeToLog(const string& logMsg) {
-  fprintf(m_logPtr, "%s", logMsg.c_str());
-  return *this;
+ofstream& Environment::writeToLog(const string& message) {
+  m_log << message;
+  return m_log;
 }
 
-Environment& Environment::execute(ostream& log) {
-  string msg = timeStamp();
-  msg += "Performed http request => server response ";
-  writeToLog(msg);
+Environment& Environment::execute() {
+  clearResponseBuffer();
   m_result = curl_easy_perform(m_curl);
-  writeToLog("\n");
+  m_log << timeStamp() << "bytes in response buffer: " << m_responseBuf.length() << endl << endl;
   errorCheck();
   return *this;
 }
+
+ostream& Environment::operator<<(const string& logMessage) {
+  return writeToLog(logMessage);
+}
+
+/* int main() {
+  Environment E;
+
+  return 0;
+} */

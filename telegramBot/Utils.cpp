@@ -1,11 +1,12 @@
-
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
+#include <regex>
+#include <fstream>
 #include "Utils.h"
 
 using namespace std;
 
-namespace sdds {
+namespace utils {
 
   Utils::Utils() {
     m_inputPtr = &cin;
@@ -22,7 +23,9 @@ namespace sdds {
     while (!ok) {
       istream.getline(inputBuf, 2, '\n');
 
-      if(istream.good() && !inputBuf[0]) { // user only press enter
+      if(istream.good() && inputBuf[0]) { // user enter 1 char
+        ok = true;
+      } else if(istream.good() && !inputBuf[0]) { // user only press enter
         ok = true;
         delete[] inputBuf;
         inputBuf = nullptr;
@@ -338,6 +341,122 @@ namespace sdds {
     return true;
   }
 
+  // regex 
+
+  string Utils::grep(const regex& pattern, const string& data) {
+    string result{};
+    int startPosition{};
+    int endPosition = data.find('\n');
+    string subStr{};
+
+    if(endPosition != string::npos) {
+      subStr = data.substr(0, endPosition + 1);
+    }
+
+    while (endPosition != string::npos) {
+      if(regex_search(subStr, pattern)) {
+        result += subStr;
+      }
+      // start at next line first char
+      startPosition = endPosition + 1;
+      
+      // find the next newline char
+      endPosition = data.find('\n', startPosition);
+
+      // renew the substr to check
+      if(endPosition != string::npos) {
+        subStr = data.substr(startPosition, (endPosition - startPosition + 1));
+      } else {
+        subStr = data.substr(startPosition, data.length() - startPosition);
+        if(regex_search(subStr, pattern)) {
+          result += subStr;
+        }
+      }
+    }
+
+    subStr = data.substr(startPosition, data.length() - startPosition);
+
+    if(regex_search(subStr, pattern)) {
+      result += subStr;
+    }
+
+    return result;
+  }
+
+  string Utils::grep(const regex& pattern, istream& inputFile) {
+    string result{};
+    string lineContext{};
+    while (inputFile.good()) {
+      getline(inputFile, lineContext);
+      if(regex_search(lineContext, pattern)) {
+        result += lineContext;
+        result += '\n';
+      }
+    }
+    return result;
+  }
+
+  int Utils::grepDashC(const regex& pattern, istream& inputFile) {
+    int count{};
+    string S;
+
+    while (inputFile.good() && !inputFile.eof()) {
+      getline(inputFile, S);
+      count += regex_search(S, pattern);
+    }
+    return count;
+  }
+
+  int Utils::grepDashC(const regex& pattern , const string& inputString) {
+    int count{};
+    int startPosition{};
+    int endPosition = inputString.find('\n');
+    string subStr{};
+
+    // there is 1 line / empty str
+    if(endPosition == string::npos) {
+      count = regex_search(inputString, pattern);
+    } else { // start extract first line
+      subStr = inputString.substr(0, endPosition);
+    }
+
+    while (endPosition != string::npos) {
+      count += regex_search(subStr, pattern);
+
+      // start at next line first char
+      startPosition = endPosition + 1;
+
+      // find the next newline char
+      endPosition = inputString.find('\n', startPosition);
+
+      // renew the substr to check
+      if(endPosition != string::npos) {
+        subStr = inputString.substr(startPosition, endPosition - startPosition);
+      }
+    }
+    return count;
+  }
+
   Utils U;
 
-} // namespace sdds
+} // namespace utils
+
+using namespace utils;
+
+/* int main() { */
+/*   // test on grep(regex, string)
+  string data;
+  string result;
+
+  data = "Hi there\nToronto\nHongKong\nHong Kong Toronto!!!!\n --->Toronto";
+  result = U.grep(regex("Toronto"), data);
+
+  cout << "The result is: ";
+  cout << result << endl; */
+
+  // test on grep -c
+/*   ifstream foo("grep-c.txt");
+  int recordCount = U.grepDashC(regex(","), foo);
+  cout << recordCount << endl;
+  return 0;
+} */
