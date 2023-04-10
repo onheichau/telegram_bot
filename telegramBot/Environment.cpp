@@ -1,7 +1,5 @@
 #include <iostream>
 #include <fstream>
-#include <regex>
-#include <chrono>
 #include "Environment.h"
 #include "Utils.h"
 
@@ -10,18 +8,17 @@ using namespace utils;
 
 // ============================ private method  ================================
 
-size_t Environment::writeResponseToLog_cb(char* chunkBytes, size_t size, size_t numOfMemBlock, ofstream* log) {
-  if(!log->is_open()) {
-    log->open(logFile, ios::app);
-  }
-  *log << chunkBytes;
-  return size * numOfMemBlock;
-}
+// return a string that contain api, token and chatid in url format
+string Environment::read(const string& fileName) {
+  char WARN_NULLPTR_RETURNED[]{"Warning: no character is read! nullptr is returned!"};
+  ifstream input(fileName);
+  char* data{};
+  U << input;
 
-size_t Environment::writeResponseToBuffer_cb(char* chunkBytes, size_t size, size_t numOfMemBlock, string* responseBuff) {
-  *responseBuff += chunkBytes;
-  return size * numOfMemBlock;
-}
+  if(input.is_open()) {
+    // validate JSON format
+    (input.peek() == '{' && input.ignore(20, ':')) || (cout << "invalid JSON file!");
+    input.ignore(2);
 
 Environment& Environment::errorCheck() {
   if(m_result != CURLE_OK) {
@@ -138,13 +135,3 @@ Environment& Environment::execute() {
   errorCheck();
   return *this;
 }
-
-ostream& Environment::operator<<(const string& logMessage) {
-  return writeToLog(logMessage);
-}
-
-/* int main() {
-  Environment E;
-
-  return 0;
-} */
