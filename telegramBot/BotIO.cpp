@@ -76,6 +76,7 @@ BotIO& BotIO::sendMessageToTelegram(const string& msg) {
   request += m_chatId;
   request += "&text=";
   request += m_env.escapeString(msg);
+  request += "&parse_mode=Markdown";
   m_env.setOutputToLog().createRequest(request);
   writeToLog(timeStamp()) << "<call telegram send message method>"  << endl;
   m_env.execute();
