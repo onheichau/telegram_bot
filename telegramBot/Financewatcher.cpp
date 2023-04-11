@@ -11,7 +11,7 @@ using namespace utils;
 
 // read the data from file which record what product to monitor
 Financewatcher& Financewatcher::load(const string& fileName) {
-  Finicalentity buffer;
+  Fincialentity buffer;
   char* inputBuffer{};
   ifstream watchListInput(fileName);
 
@@ -19,7 +19,7 @@ Financewatcher& Financewatcher::load(const string& fileName) {
     writeToLog(timeStamp()) << "<ERROR> Financewatcher fail to open file. File name: " << fileName << endl;
   } else {
     m_listSize = U.grepDashC(regex(","), watchListInput);
-    m_watchList = new Finicalentity[m_listSize];
+    m_watchList = new Fincialentity[m_listSize];
 
     // why seekg not work???? have to clear close and open to rewind the char position
     watchListInput.clear();
@@ -50,14 +50,14 @@ Financewatcher& Financewatcher::load(const string& fileName) {
   return *this;
 }
 
-Financewatcher& Financewatcher::updateWatchList(Finicalentity* watchList) {
+Financewatcher& Financewatcher::updateWatchList(Fincialentity* watchList) {
   for (size_t i = 0; i < m_listSize ; i++) {
     updateWatchCase(watchList[i]);
   }
   return *this;
 }
 
-Financewatcher& Financewatcher::updateWatchCase(Finicalentity& watchItem) {
+Financewatcher& Financewatcher::updateWatchCase(Fincialentity& watchItem) {
   bool ok{};
   string pattern{}, url{"https://ca.finance.yahoo.com/quote/"};
   int attemptCount{}, matchedCount{};
@@ -155,31 +155,14 @@ Financewatcher& Financewatcher::run() {
 }
 
 Financewatcher& Financewatcher::resourceHandler() {
+  string report{};
   for (size_t i = 0; i < m_listSize; i++) {
-    if(/* m_watchList[i].m_currentChangePercentage > m_watchList[i].alertPercentage || 
-      -m_watchList[i].m_currentChangePercentage > m_watchList[i].alertPercentage) */
-      m_watchList[i].m_currentPrice > 3) {
-        string message;
-        message += "[Alert] => ";
-        message += m_watchList[i].m_alias;
-        message += "\n";
-        message += "current price: ";
-        message += to_string(m_watchList[i].m_currentPrice);
-        message += "\n";
-        message += "change percentage: ";
-        message += to_string(m_watchList[i].m_currentChangePercentage);
-        message += "\n";
-        message += "previous close: ";
-        message += to_string(m_watchList[i].m_previousClose);
-        message += "\n";
-        message += "holding position: ";
-        message += to_string(m_watchList[i].m_holdingPosition);
-        message += "\n";
-        message += "change on portfolio: ";
-        message += to_string(m_watchList[i].m_holdingPosition * m_watchList[i].m_previousClose * m_watchList[i].m_currentChangePercentage * 0.01);
-        message += "\n";
-        writeToLog(timeStamp()) << "ready to send the following msg to tg: " << endl << message << endl;
-      sendMessageToTelegram(message);
+    if(m_watchList[i].needNotification()) {
+      report = m_watchList[i].createReport();
+      writeToLog(timeStamp()) << "ready to send the following msg to tg: " << endl << report << endl;
+      sendMessageToTelegram(report);
+    } else {
+      writeToLog(timeStamp()) << m_watchList[i].m_alias << " no need to send report." << endl;
     }
   }
   return *this;
