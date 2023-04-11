@@ -3,16 +3,7 @@
 #include <iostream>
 #include <string>
 #include "BotIO.h"
-
-struct Finicalentity {
-  std::string m_identifier;
-  std::string m_alias;
-  double m_currentPrice{};
-  double m_currentChangePercentage{};
-  double m_previousClose{};
-  int m_holdingPosition;
-  double alertPercentage;
-};
+#include "Fincialentity.h"
 
 const int VALID_RESPONSE = 3;
 const int MAX_ATTEMPT = 5;
@@ -21,18 +12,17 @@ const std::string previousClosePattern = "PREV_CLOSE-value\">";
 
 class Financewatcher : public BotIO {
 private:
-  Finicalentity* m_watchList{};
+  Fincialentity* m_watchList{};
   size_t m_listSize{};
-
 
   // loads data from file to retrieve the watch list
   Financewatcher& load(const std::string& fileName);
 
   // updates the information of all items in the watch list
-  Financewatcher& updateWatchList(Finicalentity* watchList);
+  Financewatcher& updateWatchList(Fincialentity* watchList);
 
   // updates one item's state with latest market information
-  Financewatcher& updateWatchCase(Finicalentity& watchItem);
+  Financewatcher& updateWatchCase(Fincialentity& watchItem);
 
   // returns a string that uniquely identify the html element that contains price info
   std::string latestPricePattern(const std::string& identifier);
