@@ -27,11 +27,11 @@ string Fincialentity::createReport() {
 
   U << O;
 
+  O << "`";
   O << "[Alert] => ";
   O << m_alias;
   O << endl;
 
-  O << "`";
   U.print("current price", 20, true);
   U.print(":", 2, true);
   U.print(m_currentPrice, 2, 10, true);
