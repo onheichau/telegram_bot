@@ -1,3 +1,1 @@
-// JSON parser module
-// To be implemented
-// ...
+// JSON parser module ... To be implemented
