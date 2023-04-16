@@ -2,6 +2,7 @@
 #include <fstream>
 #include <chrono>
 #include "Environment.h"
+#include "Timer.h"
 #include "Utils.h"
 
 using namespace std;
@@ -108,21 +109,10 @@ Environment& Environment::clearResponseBuffer() {
 }
 
 Environment& Environment::createRequest(const string& url) {
+  writeToLog("The url is: ") << url.c_str() << endl;
   curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str());
-  m_log << timeStamp() << "created request => " << url << endl;
+  m_log << timer.timeStamp() << "created request => " << url << endl;
   return *this;
-}
-
-
-string Environment::timeStamp() {
-  auto currentTime = chrono::system_clock::now();
-  time_t time = chrono::system_clock::to_time_t(currentTime);
-  string timeStamp;
-  timeStamp += "[";
-  timeStamp += ctime(&time);
-  timeStamp[timeStamp.length() - 1] = ']';
-  timeStamp += " ";
-  return timeStamp;
 }
 
 ofstream& Environment::writeToLog(const string& message) {
@@ -133,7 +123,7 @@ ofstream& Environment::writeToLog(const string& message) {
 Environment& Environment::execute() {
   clearResponseBuffer();
   m_result = curl_easy_perform(m_curl);
-  m_log << timeStamp() << "bytes in response buffer: " << m_responseBuf.length() << endl << endl;
+  m_log << timer.timeStamp() << "bytes in response buffer: " << m_responseBuf.length() << endl << endl;
   errorCheck();
   return *this;
 }

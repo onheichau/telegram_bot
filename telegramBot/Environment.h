@@ -47,9 +47,6 @@ public:
 
   Environment& clearResponseBuffer();
 
-  // returns a string of NOW(time)
-  std::string timeStamp();
-
   /// @brief append the log file
   /// @param message message to log
   /// @return reference of log file, client can continue logging using << operator
