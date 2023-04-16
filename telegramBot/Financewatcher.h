@@ -12,14 +12,16 @@ const std::string previousClosePattern = "PREV_CLOSE-value\">";
 
 class Financewatcher : public BotIO {
 private:
-  Fincialentity* m_watchList{};
-  size_t m_listSize{};
+  Fincialentity* m_usMarketWatchList{};
+  Fincialentity* m_asiaMarketWatchList{};
+  size_t m_usListSize{};
+  size_t m_asiaListSize{};
 
   // loads data from file to retrieve the watch list
   Financewatcher& load(const std::string& fileName);
 
   // updates the information of all items in the watch list
-  Financewatcher& updateWatchList(Fincialentity* watchList);
+  Financewatcher& updateWatchList(Fincialentity* watchList, const int size);
 
   // updates one item's state with latest market information
   Financewatcher& updateWatchCase(Fincialentity& watchItem);
@@ -52,6 +54,19 @@ public:
 
   // distinguishes if messages is needed to send. If yes, it will handle the operation
   Financewatcher& resourceHandler();
+
+/*   Financewatcher& sendDayReportToTg();
+
+  Financewatcher& sendAlertToTg(); */
+
+  // 
+  void sendUsMarketDayReport_cb();
+
+  void sendAsiaMarketDayReport_cb();
+
+  void monitorUsMarketPrice_cb();
+
+  void monitorAsiaMarketPrice_cb();
 };
 
 

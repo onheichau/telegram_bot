@@ -18,16 +18,23 @@ Financewatcher& Financewatcher::load(const string& fileName) {
   if(!watchListInput.is_open()) {
     writeToLog(timeStamp()) << "<ERROR> Financewatcher fail to open file. File name: " << fileName << endl;
   } else {
-    m_listSize = U.grepDashC(regex(","), watchListInput);
-    m_watchList = new Fincialentity[m_listSize];
-
-    // why seekg not work???? have to clear close and open to rewind the char position
+    m_usListSize = U.grepDashC(regex("MARKET_U"), watchListInput);
+    m_usMarketWatchList = new Fincialentity[m_usListSize];
     watchListInput.clear();
     watchListInput.close();
     watchListInput.open(fileName);
+
+    m_asiaListSize = U.grepDashC(regex("MARKET_A"), watchListInput);
+    m_asiaMarketWatchList = new Fincialentity[m_asiaListSize];
+    watchListInput.clear();
+    watchListInput.close();
+    watchListInput.open(fileName);
+
     U << watchListInput;
 
-    for (size_t i = 0; i < m_listSize; i++) {
+    size_t usListIdxPosition{};
+    size_t asiaListIdxPosition{};
+    for (size_t i = 0; i < (m_usListSize + m_asiaListSize); i++) {
       inputBuffer = U.getString(',');
       buffer.m_identifier = static_cast<string>(inputBuffer);
       delete[] inputBuffer;
@@ -40,18 +47,27 @@ Financewatcher& Financewatcher::load(const string& fileName) {
       buffer.m_holdingPosition = stoi(static_cast<string>(inputBuffer));
       delete[] inputBuffer;
 
-      inputBuffer = U.getString('\n');
+      inputBuffer = U.getString(',');
       buffer.alertPercentage = stod(static_cast<string>(inputBuffer));
       delete[] inputBuffer;
 
-      m_watchList[i] = buffer;
+      inputBuffer = U.getString('\n');
+      if(U.strcmp(inputBuffer, "MARKET_U") == 0) {
+        m_usMarketWatchList[usListIdxPosition++] = buffer;
+      } else if(U.strcmp(inputBuffer, "MARKET_A") == 0) {
+        m_asiaMarketWatchList[asiaListIdxPosition++] = buffer;
+      } else {
+        U.strcmp(inputBuffer, "MARKET_A");
+        writeToLog(timeStamp()) << "<ERROR> detected invalid market identifier [" << inputBuffer << "] in " << fileName << endl;
+      }
+      delete[] inputBuffer;
     }
   }
   return *this;
 }
 
-Financewatcher& Financewatcher::updateWatchList(Fincialentity* watchList) {
-  for (size_t i = 0; i < m_listSize ; i++) {
+Financewatcher& Financewatcher::updateWatchList(Fincialentity* watchList, const int size) {
+  for (size_t i = 0; i < size ; i++) {
     updateWatchCase(watchList[i]);
   }
   return *this;
@@ -143,12 +159,14 @@ Financewatcher::Financewatcher(const string& fileName) :BotIO("dev.JSON"){
 }
 
 Financewatcher::~Financewatcher() {
-  delete[] m_watchList;
+  delete[] m_usMarketWatchList;
+  delete[] m_asiaMarketWatchList;
 }
 
 Financewatcher& Financewatcher::run() {
   writeToLog(timeStamp()) << "======================> Start" << endl;
-  updateWatchList(m_watchList);
+  updateWatchList(m_usMarketWatchList, m_usListSize);
+/*   updateWatchList(m_asiaMarketWatchList, m_asiaListSize); */
   resourceHandler();
   writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
   return *this;
@@ -156,14 +174,75 @@ Financewatcher& Financewatcher::run() {
 
 Financewatcher& Financewatcher::resourceHandler() {
   string report{};
-  for (size_t i = 0; i < m_listSize; i++) {
-    if(m_watchList[i].needNotification()) {
-      report = m_watchList[i].createReport();
+  for (size_t i = 0; i < m_usListSize; i++) {
+    if(m_usMarketWatchList[i].needNotification()) {
+      report = m_usMarketWatchList[i].createReport();
       writeToLog(timeStamp()) << "ready to send the following msg to tg: " << endl << report << endl;
       sendMessageToTelegram(report);
     } else {
-      writeToLog(timeStamp()) << m_watchList[i].m_alias << " no need to send report." << endl;
+      writeToLog(timeStamp()) << m_usMarketWatchList[i].m_alias << " no need to send report." << endl;
     }
   }
   return *this;
 }
+
+void Financewatcher::sendUsMarketDayReport_cb() {
+  string report;
+  writeToLog(timeStamp()) << "======================> Start" << endl;
+
+  report += "============================ Daily Report On US Market ============================\n";
+  updateWatchList(m_usMarketWatchList, m_usListSize);
+
+  for (size_t i = 0; i < m_usListSize; i++) {
+    Fincialentity& watchItem = m_usMarketWatchList[i];
+    report += "Stock code: ";
+    report += watchItem.m_alias;
+    report += " change %: ";
+    report += to_string(watchItem.m_currentChangePercentage);
+    report += " change on portfolio: ";
+    report += to_string(watchItem.m_holdingPosition * watchItem.m_previousClose * watchItem.m_currentChangePercentage * 0.01);
+    report += "\n";
+  }
+  report += "============================  End of US Market Report  ============================\n";
+  sendMessageToTelegram(report);
+  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
+}
+
+void Financewatcher::sendAsiaMarketDayReport_cb() {
+  string report;
+  writeToLog(timeStamp()) << "======================> Start" << endl;
+  updateWatchList(m_asiaMarketWatchList, m_usListSize);
+  for (size_t i = 0; i < m_asiaListSize; i++) {
+    // do some thing to gather data?
+  }
+  sendMessageToTelegram(report);
+  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
+}
+
+void Financewatcher::monitorUsMarketPrice_cb() {
+  writeToLog(timeStamp()) << "======================> Start" << endl;
+  updateWatchList(m_usMarketWatchList, m_usListSize);
+  for (size_t i = 0; i < m_usListSize; i++) {
+    if(m_usMarketWatchList[i].needNotification()) {
+      // do something 
+    }
+  }
+  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
+}
+
+void Financewatcher::monitorAsiaMarketPrice_cb() {
+  writeToLog(timeStamp()) << "======================> Start" << endl;
+  updateWatchList(m_asiaMarketWatchList, m_asiaListSize);
+  for (size_t i = 0; i < m_asiaListSize; i++) {
+    if(m_asiaMarketWatchList[i].needNotification()) {
+      // do something 
+    }
+  }
+  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
+}
+
+/* int main() {
+  Financewatcher F("watch.csv");
+  F.sendUsMarketDayReport_cb();
+  return 0;
+} */
