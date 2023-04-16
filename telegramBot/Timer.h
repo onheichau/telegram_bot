@@ -3,18 +3,14 @@
 #include <iostream>
 #include <chrono>
 #include <string>
-
-const unsigned int TIME_SUNDAY = 0;
-const unsigned int TIME_MONDAY = 1;
-const unsigned int TIME_TUESDAY = 2;
-const unsigned int TIME_WEDNESDAY = 3;
-const unsigned int TIME_THURSDAY = 4;
-const unsigned int TIME_FRIDAY = 5;
-const unsigned int TIME_SATURDAY = 6;
+#include "Event.h"
 
 class Timer {
   std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> m_now;
   std::chrono::year_month_day m_ymd;
+  Event* m_eventsList{};
+  size_t m_eventListSize;
+
   Timer& updateToNow();
   int currentYear();
   unsigned int currentMonth();
@@ -24,6 +20,16 @@ class Timer {
   unsigned int currentSecond();
   unsigned int currentWeekDay();
   std::string getWeekDayName(const unsigned int weekday);
+  Timer& sortEventList();
+  Timer& resetEventList();
+  Timer& executeCallback(std::function<void()>);
+  Timer& moveToClosestEvent();
+  Timer& waitForNextEvent();
+  std::chrono::seconds secondsLeftToNextEvent();
+  Timer& loadEventList(const char* fileName);
+
+/*   Timer& registerEvent(); // implement for dynamically add event later */
+
 
 public:
   Timer();
@@ -31,6 +37,7 @@ public:
   Timer& operator=(const Timer& source) = delete;
   ~Timer() = default;
   std::string timeStamp();
+  Timer& startRoutine();
 };
 
 extern Timer timer;

@@ -1,11 +1,15 @@
 #include <iostream>
+#include <fstream>
 #include <chrono>
 #include <string>
 #include "Timer.h"
+#include "Utils.h"
+#include "Financewatcher.h"
 
 using namespace std;
 using namespace chrono;
 using namespace chrono_literals;
+using namespace utils;
 
 Timer timer;
 
@@ -115,4 +119,63 @@ string Timer::timeStamp() {
   timeStamp += (to_string(currentSecond()));
   timeStamp += "] ";
   return timeStamp;
+}
+
+Timer& Timer::sortEventList() {
+  return *this;
+}
+
+Timer& Timer::resetEventList() {
+  return *this;
+}
+
+Timer& Timer::executeCallback(function<void()>) {
+  return *this;
+}
+
+Timer& Timer::moveToClosestEvent() {
+  return *this;
+}
+
+Timer& Timer::waitForNextEvent() {
+  return *this;
+}
+
+seconds Timer::secondsLeftToNextEvent() {
+  seconds offset;
+  return offset;
+}
+
+Timer& Timer::loadEventList(const char* fileName) {
+  ifstream listInput(fileName);
+
+  m_eventListSize = U.grepDashC(regex(","), listInput);
+
+  m_eventsList = new Event[m_eventListSize];
+
+  for (size_t i = 0; i < m_eventListSize; i++) {
+    Event event;
+    char* inputBuffer{};
+    int wd, hour, minute;
+
+    inputBuffer = U.getString(',');
+    if(U.strcmp(inputBuffer, "some function name") == 0) {
+      /*       event.m_callback = puts; */
+    }
+    delete[] inputBuffer;
+
+
+    // input week day from stream
+    (listInput >> wd).ignore();
+    event.m_weekday = weekday(wd);
+
+    // input day of time from stream
+    (listInput >> hour).ignore();
+    (listInput >> minute).ignore();
+    int totalSec = minute * 60 + (hour * 3600);
+    event.m_timeOfDay = seconds(totalSec);
+    
+  }
+  
+  return *this;
 }
