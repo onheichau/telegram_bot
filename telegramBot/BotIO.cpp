@@ -1,7 +1,9 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <iostream>
 #include "BotIO.h"
+#include "Timer.h"
 #include "Utils.h"
+#include "Environment.h"
 
 using namespace std;
 using namespace utils;
@@ -52,7 +54,7 @@ BotIO::BotIO(const std::string fileName) {
 }
 
 string BotIO::timeStamp() {
-  return m_env.timeStamp();
+  return timer.timeStamp();
 }
 
 ofstream& BotIO::writeToLog(const string& message) {
