@@ -2,6 +2,7 @@
 #include <fstream>
 #include <chrono>
 #include <string>
+#include <thread>
 #include "Timer.h"
 #include "Utils.h"
 #include "Financewatcher.h"
@@ -122,48 +123,119 @@ string Timer::timeStamp() {
 }
 
 Timer& Timer::sortEventList() {
-  return *this;
+    if (m_eventListSize == 0) {
+        return *this;
+    }
+    for (size_t i = 0; i < m_eventListSize - 1; i++) {
+        for (size_t j = 0; j < m_eventListSize - i - 1; j++) {
+            if (m_eventsList[j] > m_eventsList[j + 1]) {
+                U.swap(m_eventsList[j], m_eventsList[j + 1]);
+            }
+        }
+    }
+    return *this;
 }
 
-Timer& Timer::resetEventList() {
-  return *this;
+void Timer::clearEventList() {
+  m_currentPosition = 0;
 }
 
-Timer& Timer::executeCallback(function<void()>) {
+Timer& Timer::executeCallback() {
+  m_eventsList[m_currentPosition].m_callback();
+  if(m_currentPosition < m_eventListSize) {
+    m_currentPosition++;
+  } else {
+    clearEventList();
+  }
+  waitForNextEvent();
   return *this;
 }
 
 Timer& Timer::moveToClosestEvent() {
+  updateToNow();
+  weekday currentWd = weekday(currentWeekDay());
+  microseconds currentTimeOfDay{hours(currentHour()) + minutes(currentMinute()) + seconds(currentSecond())};
+
+  bool found{};
+
+  for (size_t i = 0; i < m_eventListSize && !found; i++) {
+
+    // search from the same week day of now
+    if(currentWd == m_eventsList[i].m_weekday) {
+
+      // core loop
+      for (size_t j = i; j < m_eventListSize && !found; j++, i++) {
+        if(m_eventsList[j + 1].m_weekday != currentWd) {
+          currentWd++;
+          currentTimeOfDay = 1ms;
+        }
+        if(m_eventsList[j].m_timeOfDay > currentTimeOfDay) {
+          found = true;
+          m_currentPosition = j;
+        }
+      }
+    }
+  }
+  if(!found) {
+    m_currentPosition = 0;
+  }
   return *this;
 }
 
 Timer& Timer::waitForNextEvent() {
+  this_thread::sleep_for(secondsLeftToNextEvent() - 1500ms);
   return *this;
 }
 
-seconds Timer::secondsLeftToNextEvent() {
-  seconds offset;
-  return offset;
+microseconds Timer::secondsLeftToNextEvent() {
+  updateToNow();
+  microseconds offSet = 0ms;
+  weekday currentWd{currentWeekDay()};
+  microseconds currentTimeOfDay{hours(currentHour()) + minutes(currentMinute()) + seconds(currentSecond())};
+
+  while (currentWd != m_eventsList[m_currentPosition].m_weekday) {
+    offSet += microseconds(days(1)) - currentTimeOfDay;
+    currentTimeOfDay = 0ms;
+    currentWd++;
+  }
+  offSet += m_eventsList[m_currentPosition].m_timeOfDay - currentTimeOfDay;
+  return offSet;
 }
 
-Timer& Timer::loadEventList(const char* fileName) {
+Timer& Timer::loadEvents(const char* fileName, Financewatcher& watcher) {
   ifstream listInput(fileName);
-
+  Event event;
+  char* inputBuffer{};
+  int wd, hour, minute, second;
   m_eventListSize = U.grepDashC(regex(","), listInput);
 
   m_eventsList = new Event[m_eventListSize];
 
   for (size_t i = 0; i < m_eventListSize; i++) {
-    Event event;
-    char* inputBuffer{};
-    int wd, hour, minute;
 
+    // map call back to event
     inputBuffer = U.getString(',');
-    if(U.strcmp(inputBuffer, "some function name") == 0) {
-      /*       event.m_callback = puts; */
+    if (U.strcmp(inputBuffer, "UsReport") == 0)
+    {
+      event.m_callback = [&watcher]() { watcher.sendUsMarketDayReport_cb(); };
+    }
+    else if (U.strcmp(inputBuffer, "AsiaReport") == 0)
+    {
+      event.m_callback = [&watcher]() { watcher.sendAsiaMarketDayReport_cb(); };
+    }
+    else if (U.strcmp(inputBuffer, "UsMonitor") == 0)
+    {
+      event.m_callback = [&watcher]() { watcher.sendUsMarketDayReport_cb(); };
+    }
+    else if (U.strcmp(inputBuffer, "AsiaMonitor") == 0)
+    {
+      event.m_callback = [&watcher]() { watcher.monitorAsiaMarketPrice_cb(); };
+    }
+    else
+    {
+      cerr << "invalid event identifier detected!\n";
     }
     delete[] inputBuffer;
-
 
     // input week day from stream
     (listInput >> wd).ignore();
@@ -172,8 +244,9 @@ Timer& Timer::loadEventList(const char* fileName) {
     // input day of time from stream
     (listInput >> hour).ignore();
     (listInput >> minute).ignore();
-    int totalSec = minute * 60 + (hour * 3600);
-    event.m_timeOfDay = seconds(totalSec);
+    (listInput >> second).ignore();
+    seconds totalSec{hours(hour) + minutes(minute) + seconds(second)};
+    event.m_timeOfDay = totalSec;
     
   }
   

@@ -9,7 +9,8 @@ class Timer {
   std::chrono::time_point<std::chrono::system_clock, std::chrono::seconds> m_now;
   std::chrono::year_month_day m_ymd;
   Event* m_eventsList{};
-  size_t m_eventListSize;
+  size_t m_eventListSize{};
+  size_t m_currentPosition{};
 
   Timer& updateToNow();
   int currentYear();
@@ -21,12 +22,11 @@ class Timer {
   unsigned int currentWeekDay();
   std::string getWeekDayName(const unsigned int weekday);
   Timer& sortEventList();
-  Timer& resetEventList();
-  Timer& executeCallback(std::function<void()>);
+  void clearEventList();
+  Timer& executeCallback();
   Timer& moveToClosestEvent();
   Timer& waitForNextEvent();
-  std::chrono::seconds secondsLeftToNextEvent();
-  Timer& loadEventList(const char* fileName);
+  std::chrono::microseconds secondsLeftToNextEvent();
 
 /*   Timer& registerEvent(); // implement for dynamically add event later */
 
@@ -37,6 +37,7 @@ public:
   Timer& operator=(const Timer& source) = delete;
   ~Timer() = default;
   std::string timeStamp();
+  Timer& loadEvents(const char* fileName, Financewatcher& watcher);
   Timer& startRoutine();
 };
 
