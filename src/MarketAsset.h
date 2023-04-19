@@ -2,7 +2,7 @@
 #define FINCIALENTITY_H__
 #include <string>
 
-struct Fincialentity {
+struct MarketAsset {
   std::string m_identifier;
   std::string m_alias;
   double m_currentPrice{};

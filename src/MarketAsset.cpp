@@ -3,13 +3,13 @@
 #include <string>
 #include <cmath>
 #include <iomanip>
-#include "Fincialentity.h"
+#include "MarketAsset.h"
 #include "Utils.h"
 
 using namespace std;
 using namespace utils;
 
-bool Fincialentity::needNotification() {
+bool MarketAsset::needNotification() {
   bool needNotification{};
   if(abs(m_currentChangePercentage) >= alertPercentage)  {
       needNotification = true;
@@ -21,7 +21,7 @@ bool Fincialentity::needNotification() {
   return needNotification;
 }
 
-string Fincialentity::createReport() {
+string MarketAsset::createReport() {
   string report;
   ofstream O("report.txt");
 
