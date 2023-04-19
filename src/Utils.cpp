@@ -393,6 +393,8 @@ namespace utils {
         result += '\n';
       }
     }
+    inputFile.clear();
+    inputFile.seekg(0);
     return result;
   }
 
@@ -404,6 +406,9 @@ namespace utils {
       getline(inputFile, S);
       count += regex_search(S, pattern);
     }
+
+    inputFile.clear();
+    inputFile.seekg(0);
     return count;
   }
 
@@ -440,23 +445,3 @@ namespace utils {
   Utils U;
 
 } // namespace utils
-
-using namespace utils;
-
-/* int main() { */
-/*   // test on grep(regex, string)
-  string data;
-  string result;
-
-  data = "Hi there\nToronto\nHongKong\nHong Kong Toronto!!!!\n --->Toronto";
-  result = U.grep(regex("Toronto"), data);
-
-  cout << "The result is: ";
-  cout << result << endl; */
-
-  // test on grep -c
-/*   ifstream foo("grep-c.txt");
-  int recordCount = U.grepDashC(regex(","), foo);
-  cout << recordCount << endl;
-  return 0;
-} */
