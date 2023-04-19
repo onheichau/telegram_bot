@@ -6,7 +6,6 @@
 
 
 class BotIO {
-  BotIO& read(const std::string& fileName);
 
 protected:
   // returns a string of NOW(time)
@@ -26,11 +25,8 @@ protected:
   BotIO& sendMessageToTelegram(const std::string& msg);
 
 public:
-  BotIO();
-  BotIO(const std::string fileName);
+  BotIO(const std::string& token, const std::string& chatId);
   virtual ~BotIO() = default;
-  virtual BotIO& run();
-  virtual BotIO& resourceHandler();
 };
 
 #endif

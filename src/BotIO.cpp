@@ -12,48 +12,17 @@ static Environment m_env;
 static string m_apiEndPoint;
 static string m_chatId;
 
-// return a string that contain api, token and chatid in url format
-BotIO& BotIO::read(const string& fileName) {
-  char WARN_NULLPTR_RETURNED[]{"Warning: no character is read! nullptr is returned!"};
-  ifstream input(fileName);
-  char* data{};
-  U << input;
+BotIO::BotIO(const string &token, const string &chatId) {
+  m_apiEndPoint = "https://api.telegram.org/";
+  m_apiEndPoint += token;
+  m_apiEndPoint += "/";
 
-  if(input.is_open()) {
-    // validate JSON format
-    (input.peek() == '{' && input.ignore(20, ':')) || (cout << "invalid JSON file!");
-    input.ignore(2);
-
-    // fetch api
-    data = U.getString('"', WARN_NULLPTR_RETURNED);
-    m_apiEndPoint += data;
-    input.ignore(20, ':');
-    input.ignore(10, '"');
-    delete[] data; data = nullptr;
-
-    // fetch token
-    data = U.getString('"', WARN_NULLPTR_RETURNED);
-    m_apiEndPoint += data;
-    input.ignore(20, ':');
-    input.ignore(10, '"');
-    delete[] data; data = nullptr;
-
-    // fetch charId
-    data = U.getString('"', WARN_NULLPTR_RETURNED);
-    m_chatId = data;
-
-  } else {
-    writeToLog(timeStamp()) << "BotIO fail to open file. File name: " << fileName << endl;
+  m_chatId = "chat_id=-";
+  m_chatId += chatId;
   }
-  delete[] data;
-  return *this;
-}
 
-BotIO::BotIO(const std::string fileName) {
-  read(fileName);
-}
-
-string BotIO::timeStamp() {
+string BotIO::timeStamp()
+{
   return timer.timeStamp();
 }
 
@@ -82,13 +51,5 @@ BotIO& BotIO::sendMessageToTelegram(const string& msg) {
   m_env.setOutputToLog().createRequest(request);
   writeToLog(timeStamp()) << "<call telegram send message method>"  << endl;
   m_env.execute();
-  return *this;
-}
-
-BotIO& BotIO::run(){
-  return *this;
-}
-
-BotIO& BotIO::resourceHandler() {
   return *this;
 }
