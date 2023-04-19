@@ -68,32 +68,5 @@ string Fincialentity::createReport() {
     report += static_cast<string>(buff);
     delete[] buff;
   }
-
-
-/* 
-  report += "[Alert] => ";
-  report += m_alias;
-  report += "\n";
-  
-  report += "current price      : ";
-  report += to_string(m_currentPrice);
-  report += "\n";
-
-  report += "change percentage  : ";
-  report += to_string(m_currentChangePercentage);
-  report += "\n";
-
-  report += "previous close     : ";
-  report += to_string(m_previousClose);
-  report += "\n";
-
-  report += "holding position   : ";
-  report += to_string(m_holdingPosition);
-  report += "\n";
-
-  report += "change on portfolio: ";
-  report += to_string(m_holdingPosition * m_previousClose * m_currentChangePercentage * 0.01);
-  report += "\n"; */
-
   return report;
 }
