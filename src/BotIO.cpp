@@ -13,7 +13,7 @@ static string m_apiEndPoint;
 static string m_chatId;
 
 BotIO::BotIO(const string &token, const string &chatId) {
-  m_apiEndPoint = "https://api.telegram.org/";
+  m_apiEndPoint = "https://api.telegram.org/bot";
   m_apiEndPoint += token;
   m_apiEndPoint += "/";
 
