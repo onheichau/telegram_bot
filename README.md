@@ -3,7 +3,7 @@ This is a telegram bot which monitor stock price, assignment release, and curren
 It is capable of send you an alert via telegram bot base on the condition set.
 
 # Class diagram 
-![The bot programm is designed as followed:](telegramBot/images/class_diagram.png)
+![The bot programm is designed as followed:](images/class_diagram.png)
 
 # Dependencies
 g++ , curl
