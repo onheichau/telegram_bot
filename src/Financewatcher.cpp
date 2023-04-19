@@ -154,36 +154,15 @@ double Financewatcher::extractChangePercentage(const string& identifier) {
   return ch == '+'? extractValue(result) * 100 : -extractValue(result) * 100;
 }
 
-Financewatcher::Financewatcher(const string& fileName) :BotIO("dev.JSON"){
+Financewatcher::Financewatcher(const string& fileName, const string& token, const string& chatId) 
+:BotIO(token, chatId)
+{
   load(fileName);
 }
 
 Financewatcher::~Financewatcher() {
   delete[] m_usMarketWatchList;
   delete[] m_asiaMarketWatchList;
-}
-
-Financewatcher& Financewatcher::run() {
-  writeToLog(timeStamp()) << "======================> Start" << endl;
-  updateWatchList(m_usMarketWatchList, m_usListSize);
-/*   updateWatchList(m_asiaMarketWatchList, m_asiaListSize); */
-  resourceHandler();
-  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
-  return *this;
-}
-
-Financewatcher& Financewatcher::resourceHandler() {
-  string report{};
-  for (size_t i = 0; i < m_usListSize; i++) {
-    if(m_usMarketWatchList[i].needNotification()) {
-      report = m_usMarketWatchList[i].createReport();
-      writeToLog(timeStamp()) << "ready to send the following msg to tg: " << endl << report << endl;
-      sendMessageToTelegram(report);
-    } else {
-      writeToLog(timeStamp()) << m_usMarketWatchList[i].m_alias << " no need to send report." << endl;
-    }
-  }
-  return *this;
 }
 
 void Financewatcher::sendUsMarketDayReport_cb() {

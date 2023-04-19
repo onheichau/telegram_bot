@@ -46,18 +46,8 @@ private:
 
 public:
   // constructs the instance's watch list according to the file name provided
-  Financewatcher(const std::string& fileName);
+  Financewatcher(const std::string& fileName, const std::string& token, const std::string& chatId);
   ~Financewatcher();
-
-  // program entry point
-  Financewatcher& run();
-
-  // distinguishes if messages is needed to send. If yes, it will handle the operation
-  Financewatcher& resourceHandler();
-
-/*   Financewatcher& sendDayReportToTg();
-
-  Financewatcher& sendAlertToTg(); */
 
   // 
   void sendUsMarketDayReport_cb();
