@@ -2,6 +2,7 @@
 #define FINANCEWATCHER_H__
 #include <iostream>
 #include <string>
+#include <unordered_map>
 #include "BotIO.h"
 #include "MarketAsset.h"
 
@@ -12,10 +13,12 @@ const std::string previousClosePattern = "PREV_CLOSE-value\">";
 
 class MarketMonitor : public BotIO {
 private:
+public:
   MarketAsset* m_usMarketWatchList{};
   MarketAsset* m_asiaMarketWatchList{};
   size_t m_usListSize{};
   size_t m_asiaListSize{};
+  std::unordered_map<std::string, std::function<void()>> m_callbackMap;
 
   // loads data from file to retrieve the watch list
   MarketMonitor& load(const std::string& fileName);
@@ -44,7 +47,6 @@ private:
   // extract percentage change info from html element string
   double extractChangePercentage(const std::string& identifier);
 
-public:
   // constructs the instance's watch list according to the file name provided
   MarketMonitor(const std::string& fileName, const std::string& token, const std::string& chatId);
   ~MarketMonitor();

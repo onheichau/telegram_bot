@@ -152,6 +152,10 @@ MarketMonitor::MarketMonitor(const string& fileName, const string& token, const 
 :BotIO(token, chatId)
 {
   load(fileName);
+  m_callbackMap["UsMonitor"] = [this]() { monitorUsMarketPrice_cb(); };
+  m_callbackMap["AsiaMonitor"] = [this]() { monitorAsiaMarketPrice_cb(); };
+  m_callbackMap["UsReport"] = [this]() { sendUsMarketDayReport_cb(); };
+  m_callbackMap["AsiaReport"] = [this]() { sendAsiaMarketDayReport_cb(); };
 }
 
 MarketMonitor::~MarketMonitor() {
@@ -160,62 +164,48 @@ MarketMonitor::~MarketMonitor() {
 }
 
 void MarketMonitor::sendUsMarketDayReport_cb() {
-  string report;
-  writeToLog(timeStamp()) << "======================> Start" << endl;
+    string report;
 
-  report += "============================ Daily Report On US Market ============================\n";
-  updateWatchList(m_usMarketWatchList, m_usListSize);
+    report += "============================ Daily Report On US Market ============================\n";
+    updateWatchList(m_usMarketWatchList, m_usListSize);
 
-  for (size_t i = 0; i < m_usListSize; i++) {
-    MarketAsset& watchItem = m_usMarketWatchList[i];
-    report += "Stock code: ";
-    report += watchItem.m_alias;
-    report += " change %: ";
-    report += to_string(watchItem.m_currentChangePercentage);
-    report += " change on portfolio: ";
-    report += to_string(watchItem.m_holdingPosition * watchItem.m_previousClose * watchItem.m_currentChangePercentage * 0.01);
-    report += "\n";
-  }
-  report += "============================  End of US Market Report  ============================\n";
-  sendMessageToTelegram(report);
-  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
+    for (size_t i = 0; i < m_usListSize; i++) {
+      MarketAsset& watchItem = m_usMarketWatchList[i];
+      report += "Stock code: ";
+      report += watchItem.m_alias;
+      report += " change %: ";
+      report += to_string(watchItem.m_currentChangePercentage);
+      report += " change on portfolio: ";
+      report += to_string(watchItem.m_holdingPosition * watchItem.m_previousClose * watchItem.m_currentChangePercentage * 0.01);
+      report += "\n";
+    }
+    report += "============================  End of US Market Report  ============================\n";
+    sendMessageToTelegram(report);
 }
 
 void MarketMonitor::sendAsiaMarketDayReport_cb() {
   string report;
-  writeToLog(timeStamp()) << "======================> Start" << endl;
   updateWatchList(m_asiaMarketWatchList, m_usListSize);
   for (size_t i = 0; i < m_asiaListSize; i++) {
     // do some thing to gather data?
   }
   sendMessageToTelegram(report);
-  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
 }
 
 void MarketMonitor::monitorUsMarketPrice_cb() {
-  writeToLog(timeStamp()) << "======================> Start" << endl;
   updateWatchList(m_usMarketWatchList, m_usListSize);
   for (size_t i = 0; i < m_usListSize; i++) {
     if(m_usMarketWatchList[i].needNotification()) {
       // do something 
     }
   }
-  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
 }
 
 void MarketMonitor::monitorAsiaMarketPrice_cb() {
-  writeToLog(timeStamp()) << "======================> Start" << endl;
   updateWatchList(m_asiaMarketWatchList, m_asiaListSize);
   for (size_t i = 0; i < m_asiaListSize; i++) {
     if(m_asiaMarketWatchList[i].needNotification()) {
       // do something 
     }
   }
-  writeToLog(timeStamp()) << "======================> Exit" << endl << endl;
 }
-
-/* int main() {
-  MarketMonitor F("watch.csv");
-  F.sendUsMarketDayReport_cb();
-  return 0;
-} */
