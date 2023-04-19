@@ -163,6 +163,10 @@ MarketMonitor::~MarketMonitor() {
   delete[] m_asiaMarketWatchList;
 }
 
+unordered_map<string, function<void()>>& MarketMonitor::callbackMap() {
+  return m_callbackMap;
+}
+
 void MarketMonitor::sendUsMarketDayReport_cb() {
     string report;
 

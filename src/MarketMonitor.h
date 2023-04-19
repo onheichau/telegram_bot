@@ -13,7 +13,6 @@ const std::string previousClosePattern = "PREV_CLOSE-value\">";
 
 class MarketMonitor : public BotIO {
 private:
-public:
   MarketAsset* m_usMarketWatchList{};
   MarketAsset* m_asiaMarketWatchList{};
   size_t m_usListSize{};
@@ -47,11 +46,13 @@ public:
   // extract percentage change info from html element string
   double extractChangePercentage(const std::string& identifier);
 
+public:
   // constructs the instance's watch list according to the file name provided
   MarketMonitor(const std::string& fileName, const std::string& token, const std::string& chatId);
   ~MarketMonitor();
 
-  // 
+  std::unordered_map<std::string, function<void()>>& callbackMap();
+  
   void sendUsMarketDayReport_cb();
 
   void sendAsiaMarketDayReport_cb();
