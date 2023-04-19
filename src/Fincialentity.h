@@ -13,6 +13,7 @@ struct Fincialentity {
   bool marketIsOpen{};
   bool needNotification();
   std::string createReport();
+/*   std::string createAlert(); */
 };
 
 #endif

@@ -17,7 +17,7 @@ bool Event::operator>(const Event& rhs) {
   } else if ((m_weekday == rhs.m_weekday) && (m_timeOfDay > rhs.m_timeOfDay)) {
     thisEventIsLater = true;
   }
-  return ;
+  return thisEventIsLater;
 }
 
 bool Event::operator<(const Event& rhs) {

@@ -1,15 +1,15 @@
-#include <iostream>
-#include "BotIO.h"
+/* #include <iostream>
 #include "Financewatcher.h"
+#include "Timer.h"
 
 using namespace std;
 
 int main() {
   Financewatcher watchDog("watch.csv");
 
-  BotIO* godPointer = &watchDog;
 
-  godPointer->run();
+
+  // watchDog.monitorUsMarketPrice_cb;
 
   return 0;
-}
+} */

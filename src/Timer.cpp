@@ -44,17 +44,23 @@ unsigned int Timer::currentWeekDay() {
   return wd.__weekday_from_days(m_ymd.__to_days().count());
 }
 
-unsigned int Timer::currentHour() {
+hh_mm_ss<seconds> Timer::currentHMS() {
   updateToNow();
-  return (m_now.time_since_epoch().count() / 3600) % 24;
+  return hh_mm_ss<seconds>(hours(floor<hours>(m_now.time_since_epoch()).count() % 24) +
+                           minutes(floor<minutes>(m_now.time_since_epoch()).count() % 60) +
+                           seconds(floor<seconds>(m_now.time_since_epoch()).count() % 60));
+}
+
+unsigned int Timer::currentHour() {
+  return (currentHMS().hours().count());
 }
 
 unsigned int Timer::currentMinute() {
-  return (m_now.time_since_epoch().count() / 60) % 60;
+  return (currentHMS().minutes().count());
 }
 
 unsigned int Timer::currentSecond() {
-  return m_now.time_since_epoch().count() % 60;
+  return (currentHMS().seconds().count());
 }
 
 std::string Timer::getWeekDayName(const unsigned int weekday) {
@@ -140,8 +146,17 @@ void Timer::clearEventList() {
   m_currentPosition = 0;
 }
 
-Timer& Timer::executeCallback() {
+Timer& Timer::enterWorkingStage() {
+  while (timeLeftToNextEvent(m_eventsList[m_currentPosition]) >= 0ms) {
+    // do nothing , ready for executing event
+  }
+  
+  // log start
+
   m_eventsList[m_currentPosition].m_callback();
+
+  // log end
+
   if(m_currentPosition < m_eventListSize) {
     m_currentPosition++;
   } else {
@@ -167,9 +182,9 @@ Timer& Timer::moveToClosestEvent() {
       for (size_t j = i; j < m_eventListSize && !found; j++, i++) {
         if(m_eventsList[j + 1].m_weekday != currentWd) {
           currentWd++;
-          currentTimeOfDay = 1ms;
+          currentTimeOfDay = 0ms;
         }
-        if(m_eventsList[j].m_timeOfDay > currentTimeOfDay) {
+        if(m_eventsList[j].m_timeOfDay >= currentTimeOfDay) {
           found = true;
           m_currentPosition = j;
         }
@@ -183,33 +198,44 @@ Timer& Timer::moveToClosestEvent() {
 }
 
 Timer& Timer::waitForNextEvent() {
-  this_thread::sleep_for(secondsLeftToNextEvent() - 1500ms);
+  microseconds wakeupBufferTime = 1500ms;
+
+  microseconds waitTime = timeLeftToNextEvent(m_eventsList[m_currentPosition]);
+  if(waitTime > 3000ms) {
+    this_thread::sleep_for(timeLeftToNextEvent(m_eventsList[m_currentPosition]) - wakeupBufferTime);
+  }
+
   return *this;
 }
 
-microseconds Timer::secondsLeftToNextEvent() {
+microseconds Timer::timeLeftToNextEvent(const Event& nextEvent) {
   updateToNow();
   microseconds offSet = 0ms;
   weekday currentWd{currentWeekDay()};
   microseconds currentTimeOfDay{hours(currentHour()) + minutes(currentMinute()) + seconds(currentSecond())};
 
-  while (currentWd != m_eventsList[m_currentPosition].m_weekday) {
+  while (currentWd != nextEvent.m_weekday) {
     offSet += microseconds(days(1)) - currentTimeOfDay;
     currentTimeOfDay = 0ms;
     currentWd++;
   }
-  offSet += m_eventsList[m_currentPosition].m_timeOfDay - currentTimeOfDay;
+  offSet += nextEvent.m_timeOfDay - currentTimeOfDay;
   return offSet;
 }
 
 Timer& Timer::loadEvents(const char* fileName, Financewatcher& watcher) {
-  ifstream listInput(fileName);
+  ifstream input(fileName);
   Event event;
   char* inputBuffer{};
-  int wd, hour, minute, second;
-  m_eventListSize = U.grepDashC(regex(","), listInput);
+  int wd, hour, minute;
+  m_eventListSize = U.grepDashC(regex(","), input);
+
+  input.clear();
+  input.seekg(0);
 
   m_eventsList = new Event[m_eventListSize];
+
+  U << input;
 
   for (size_t i = 0; i < m_eventListSize; i++) {
 
@@ -238,17 +264,46 @@ Timer& Timer::loadEvents(const char* fileName, Financewatcher& watcher) {
     delete[] inputBuffer;
 
     // input week day from stream
-    (listInput >> wd).ignore();
+    (input >> wd).ignore();
     event.m_weekday = weekday(wd);
 
     // input day of time from stream
-    (listInput >> hour).ignore();
-    (listInput >> minute).ignore();
-    (listInput >> second).ignore();
-    seconds totalSec{hours(hour) + minutes(minute) + seconds(second)};
+    (input >> hour).ignore();
+    (input >> minute).ignore();
+    seconds totalSec{hours(hour) + minutes(minute)};
     event.m_timeOfDay = totalSec;
-    
+
+    m_eventsList[i] = event;
   }
-  
   return *this;
+}
+
+Timer& Timer::startRoutine() {
+  // perhaps it can be some atomic / global control by main thread / UI thread
+  bool keepWorking{true}; 
+  sortEventList().moveToClosestEvent();
+  while (keepWorking) {
+    enterWorkingStage();
+  }
+  return *this;
+}
+
+ostream& operator<<(ostream& os, Timer& rhs) {
+  os << rhs.timeStamp();
+  return os;
+}
+
+int main() {
+  Financewatcher watcher("watch.csv");
+  timer.loadEvents("event.csv", watcher);
+  timer.sortEventList();
+  
+  for (size_t i = 0; i < timer.m_eventListSize; i++) {
+/*     cout << "event weekday: " << timer.m_eventsList[i].m_weekday.c_encoding() << " "
+    << "event Hour: " << duration<float, ratio<3600>>(timer.m_eventsList[i].m_timeOfDay).count() << " " */
+    cout << "time left to this event: " << duration<float, ratio<3600>>(timer.timeLeftToNextEvent(timer.m_eventsList[i])).count()
+    << endl;
+  }
+
+  return 0;
 }
