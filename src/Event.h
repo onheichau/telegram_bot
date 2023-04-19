@@ -20,4 +20,6 @@ struct Event {
   bool operator==(const Event& rhs);
 };
 
+std::ostream& operator<<(std::ostream& os, const Event& rhs);
+
 #endif
