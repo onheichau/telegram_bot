@@ -7,10 +7,6 @@ using namespace std;
 using namespace chrono;
 
 
-Event::Event(function<void()> callback, const int weekday, const chrono::seconds timeOfDay) {
-
-}
-
 bool Event::operator>(const Event& rhs) {
   bool thisEventIsLater{};
   if(m_weekday.c_encoding() > rhs.m_weekday.c_encoding()) {
