@@ -38,9 +38,9 @@ public:
   Timer& operator=(const Timer& source) = delete;
   ~Timer() = default;
   std::string timeStamp();
-  Timer& registerEvents(const std::string& fileName, std::unordered_map<std::string, std::function<void()>> callbackMap);
+  Timer& registerEvents(const std::string& fileName, std::unordered_map<std::string, std::function<void()>>& callbackMap);
   Timer& startRoutine();
-  Timer& saveEvents(const std::string& fileName, std::unordered_map<std::string, std::function<void()>> callbackMap);
+  Timer& saveEvents(const std::string& fileName, std::unordered_map<std::string, std::function<void()>>& callbackMap);
 };
 
 // write the time stamp to ostream

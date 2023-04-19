@@ -153,7 +153,8 @@ Timer& Timer::enterWorkingStage() {
   
   // log start
 
-  m_eventsList[m_currentPosition].m_callback();
+  function<void()> callback = *(m_eventsList[m_currentPosition].m_callback);
+  callback();
 
   // log end
 
@@ -225,7 +226,7 @@ microseconds Timer::timeLeftToNextEvent(const Event& nextEvent) {
   return offSet;
 }
 
-Timer& Timer::registerEvents(const string& fileName, unordered_map<string, function<void()>> callbackMap) {
+Timer& Timer::registerEvents(const string& fileName, unordered_map<string, function<void()>>& callbackMap) {
   ifstream input(fileName);
   Event event;
   bool matched{};
@@ -241,17 +242,10 @@ Timer& Timer::registerEvents(const string& fileName, unordered_map<string, funct
   U << input;
 
   for (size_t i = 0; i < m_eventListSize; i++) {
-    // reset flag variable
-    matched = false;
 
     // map call back to event
     inputBuffer = U.getString(',');
-    for(unordered_map<string, function<void()>>::iterator it = callbackMap.begin(); it != callbackMap.end() && !matched; ++it) {
-      if(U.strcmp(inputBuffer, it->first.c_str()) == 0) {
-        matched = true;
-        event.m_callback = it->second;
-      }
-    }
+    event.m_callback = addressof(callbackMap[string(inputBuffer)]);
     delete[] inputBuffer;
 
     // input week day from stream
@@ -279,19 +273,43 @@ Timer& Timer::startRoutine() {
   return *this;
 }
 
-Timer& Timer::saveEvents(const string& fileName, unordered_map<string, function<void()>> callbackMap) {
-  ofstream out(fileName);
+Timer& Timer::saveEvents(const string& fileName, unordered_map<string, function<void()>>& callbackMap) {
+  bool matched{}, allGood{true};
+  string buffer;
 
-  for (size_t i = 0; i < m_eventListSize; i++) {
+  for (size_t i = 0; i < m_eventListSize && allGood; i++) {
     hh_mm_ss<seconds> hms{m_eventsList[i].m_timeOfDay};
+    matched = false;
 
-    // write identifier back to file
+    // write identifier
+    for(unordered_map<string, function<void()>>::iterator it = callbackMap.begin(); it != callbackMap.end() && !matched; it++) {
+      if(m_eventsList[i].m_callback == addressof(it->second)) {
+        matched = true;
+        buffer += it->first ;
+        buffer += ",";
+      }
+    }
 
-    // write week day back to file
-    out << m_eventsList[i].m_weekday.c_encoding() << ",";
+    if(!matched) {
+      allGood = false;
+      cerr << "error to match back to identifier!" << endl;
+    } else {
+      // write week day 
+      buffer += to_string(m_eventsList[i].m_weekday.c_encoding()) ;
+      buffer += ",";
 
-    // write time back to file
-    out << hms.hours().count() << ":" << hms.minutes().count() << endl;
+      // write time back
+      buffer += to_string(hms.hours().count());
+      buffer += ":"; 
+      buffer += to_string(hms.minutes().count()); 
+      buffer += "\n";
+    }
+  }
+
+  if(allGood) {
+    ofstream out(fileName);
+
+    out? (out << buffer) : (cerr << "file is not in good state! check " << fileName << endl);
   }
   return *this;
 }
