@@ -76,5 +76,9 @@ Temporary Items
 *.vsix
 
 *.dSYM/*
-
 *.txt
+*.csv
+*.bash
+*.JSON
+*.json
+*.Json
