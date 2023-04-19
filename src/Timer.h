@@ -3,6 +3,7 @@
 #include <iostream>
 #include <chrono>
 #include <string>
+#include <unordered_map>
 #include "Event.h"
 
 class Timer {
@@ -37,8 +38,9 @@ public:
   Timer& operator=(const Timer& source) = delete;
   ~Timer() = default;
   std::string timeStamp();
-  Timer& loadEvents(const char* fileName, Financewatcher& watcher);
+  Timer& registerEvents(const std::string& fileName, std::unordered_map<std::string, std::function<void()>> callbackMap);
   Timer& startRoutine();
+  Timer& saveEvents(const std::string& fileName, std::unordered_map<std::string, std::function<void()>> callbackMap);
 };
 
 // write the time stamp to ostream

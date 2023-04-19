@@ -5,7 +5,7 @@
 #include <thread>
 #include "Timer.h"
 #include "Utils.h"
-#include "Financewatcher.h"
+#include "MarketMonitor.h"
 
 using namespace std;
 using namespace chrono;
@@ -225,9 +225,10 @@ microseconds Timer::timeLeftToNextEvent(const Event& nextEvent) {
   return offSet;
 }
 
-Timer& Timer::loadEvents(const char* fileName, Financewatcher& watcher) {
+Timer& Timer::registerEvents(const string& fileName, unordered_map<string, function<void()>> callbackMap) {
   ifstream input(fileName);
   Event event;
+  bool matched{};
   char* inputBuffer{};
   int wd, hour, minute;
   m_eventListSize = U.grepDashC(regex(","), input);
@@ -240,28 +241,16 @@ Timer& Timer::loadEvents(const char* fileName, Financewatcher& watcher) {
   U << input;
 
   for (size_t i = 0; i < m_eventListSize; i++) {
+    // reset flag variable
+    matched = false;
 
     // map call back to event
     inputBuffer = U.getString(',');
-    if (U.strcmp(inputBuffer, "UsReport") == 0)
-    {
-      event.m_callback = [&watcher]() { watcher.sendUsMarketDayReport_cb(); };
-    }
-    else if (U.strcmp(inputBuffer, "AsiaReport") == 0)
-    {
-      event.m_callback = [&watcher]() { watcher.sendAsiaMarketDayReport_cb(); };
-    }
-    else if (U.strcmp(inputBuffer, "UsMonitor") == 0)
-    {
-      event.m_callback = [&watcher]() { watcher.sendUsMarketDayReport_cb(); };
-    }
-    else if (U.strcmp(inputBuffer, "AsiaMonitor") == 0)
-    {
-      event.m_callback = [&watcher]() { watcher.monitorAsiaMarketPrice_cb(); };
-    }
-    else
-    {
-      cerr << "invalid event identifier detected!\n";
+    for(unordered_map<string, function<void()>>::iterator it = callbackMap.begin(); it != callbackMap.end() && !matched; ++it) {
+      if(U.strcmp(inputBuffer, it->first.c_str()) == 0) {
+        matched = true;
+        event.m_callback = it->second;
+      }
     }
     delete[] inputBuffer;
 
@@ -286,6 +275,23 @@ Timer& Timer::startRoutine() {
   sortEventList().moveToClosestEvent();
   while (keepWorking) {
     enterWorkingStage();
+  }
+  return *this;
+}
+
+Timer& Timer::saveEvents(const string& fileName, unordered_map<string, function<void()>> callbackMap) {
+  ofstream out(fileName);
+
+  for (size_t i = 0; i < m_eventListSize; i++) {
+    hh_mm_ss<seconds> hms{m_eventsList[i].m_timeOfDay};
+
+    // write identifier back to file
+
+    // write week day back to file
+    out << m_eventsList[i].m_weekday.c_encoding() << ",";
+
+    // write time back to file
+    out << hms.hours().count() << ":" << hms.minutes().count() << endl;
   }
   return *this;
 }
