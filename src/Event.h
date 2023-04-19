@@ -2,7 +2,7 @@
 #define EVENT_H__
 #include <iostream>
 #include <chrono>
-#include "Financewatcher.h"
+#include "MarketMonitor.h"
 
 struct Event {
   std::function<void()> m_callback; // call back function to execute
