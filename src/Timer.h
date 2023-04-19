@@ -28,7 +28,7 @@ public:
   Timer& enterWorkingStage();
   Timer& moveToClosestEvent();
   Timer& waitForNextEvent();
-
+  std::chrono::microseconds timeLeftToNextEvent(const Event& nextEvent);
 /*   Timer& registerEvent(); // implement for dynamically add event later */
 
 
@@ -37,7 +37,6 @@ public:
   Timer& operator=(const Timer& source) = delete;
   ~Timer() = default;
   std::string timeStamp();
-  std::chrono::microseconds timeLeftToNextEvent(const Event& nextEvent);
   Timer& loadEvents(const char* fileName, Financewatcher& watcher);
   Timer& startRoutine();
 };

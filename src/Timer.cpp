@@ -180,11 +180,13 @@ Timer& Timer::moveToClosestEvent() {
 
       // core loop
       for (size_t j = i; j < m_eventListSize && !found; j++, i++) {
-        if(m_eventsList[j + 1].m_weekday != currentWd) {
+
+        if(m_eventsList[j].m_weekday != currentWd) {
           currentWd++;
           currentTimeOfDay = 0ms;
         }
-        if(m_eventsList[j].m_timeOfDay >= currentTimeOfDay) {
+
+        if(m_eventsList[j].m_timeOfDay > currentTimeOfDay) {
           found = true;
           m_currentPosition = j;
         }
@@ -291,19 +293,4 @@ Timer& Timer::startRoutine() {
 ostream& operator<<(ostream& os, Timer& rhs) {
   os << rhs.timeStamp();
   return os;
-}
-
-int main() {
-  Financewatcher watcher("watch.csv");
-  timer.loadEvents("event.csv", watcher);
-  timer.sortEventList();
-  
-  for (size_t i = 0; i < timer.m_eventListSize; i++) {
-/*     cout << "event weekday: " << timer.m_eventsList[i].m_weekday.c_encoding() << " "
-    << "event Hour: " << duration<float, ratio<3600>>(timer.m_eventsList[i].m_timeOfDay).count() << " " */
-    cout << "time left to this event: " << duration<float, ratio<3600>>(timer.timeLeftToNextEvent(timer.m_eventsList[i])).count()
-    << endl;
-  }
-
-  return 0;
 }
