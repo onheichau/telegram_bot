@@ -1,11 +1,11 @@
 #include <iostream>
 #include <fstream>
 #include <chrono>
+#include <mutex>
 #include <string>
 #include <thread>
 #include "Timer.h"
 #include "Utils.h"
-#include "MarketMonitor.h"
 
 using namespace std;
 using namespace chrono;
@@ -142,28 +142,28 @@ Timer& Timer::sortEventList() {
     return *this;
 }
 
-void Timer::clearEventList() {
-  m_currentPosition = 0;
-}
-
 Timer& Timer::enterWorkingStage() {
-  while (timeLeftToNextEvent(m_eventsList[m_currentPosition]) >= 0ms) {
-    // do nothing , ready for executing event
-  }
-  
-  // log start
+  int count{};
 
-  function<void()> callback = *(m_eventsList[m_currentPosition].m_callback);
-  callback();
+  // busy waiting , ready for executing event
+  while (timeLeftToNextEvent(m_eventsList[m_currentPosition]) >= 0ms) {
+    cout << timeStamp() << "busy waiting\n";
+    count++;
+  }
+  cout << "used " << count << "cpu cycle while busy waiting\n";
+
+  // event start, execute event call back
+
+  (*(m_eventsList[m_currentPosition].m_callback))();
 
   // log end
 
   if(m_currentPosition < m_eventListSize) {
     m_currentPosition++;
   } else {
-    clearEventList();
+    cout << "start over!\n";
+    m_currentPosition = 0; // start over from sunday
   }
-  waitForNextEvent();
   return *this;
 }
 
@@ -201,13 +201,15 @@ Timer& Timer::moveToClosestEvent() {
 }
 
 Timer& Timer::waitForNextEvent() {
-  microseconds wakeupBufferTime = 1500ms;
+  seconds buffer = 1s;
+  seconds waitTime = duration_cast<seconds>(timeLeftToNextEvent(m_eventsList[m_currentPosition]));
+  unique_lock<mutex> lock(m_mutex);
 
-  microseconds waitTime = timeLeftToNextEvent(m_eventsList[m_currentPosition]);
-  if(waitTime > 3000ms) {
-    this_thread::sleep_for(timeLeftToNextEvent(m_eventsList[m_currentPosition]) - wakeupBufferTime);
+  if(waitTime > 100ms) {
+/*     cout << timeStamp() << "ready to sleep for " << seconds(duration_cast<seconds>(waitTime)).count() << " seconds ";
+    cout << "aka " << duration<double, ratio<86400>>(waitTime).count() << "days\n"; */
+    m_cv.wait_for(lock, waitTime + buffer, [this]() {return !m_keepRunning;});
   }
-
   return *this;
 }
 
@@ -222,14 +224,24 @@ microseconds Timer::timeLeftToNextEvent(const Event& nextEvent) {
     currentTimeOfDay = 0ms;
     currentWd++;
   }
+
   offSet += nextEvent.m_timeOfDay - currentTimeOfDay;
+
+  // same day but already passed
+  if(offSet < 0ms && currentWd == nextEvent.m_weekday) {
+    offSet += days(7);
+  }
+
   return offSet;
 }
 
+/// @brief register events to the timer internal Event list
+/// @param fileName a comma delimited csv file to read. format : callbackIdentifier,weekday,hour,minute
+/// @param callbackMap this unordered_map store the pairs of callback identifier and the relative callback instance
+/// @return reference of caller
 Timer& Timer::registerEvents(const string& fileName, unordered_map<string, function<void()>>& callbackMap) {
   ifstream input(fileName);
   Event event;
-  bool matched{};
   char* inputBuffer{};
   int wd, hour, minute;
   m_eventListSize = U.grepDashC(regex(","), input);
@@ -260,15 +272,21 @@ Timer& Timer::registerEvents(const string& fileName, unordered_map<string, funct
 
     m_eventsList[i] = event;
   }
+  sortEventList();
   return *this;
 }
 
 Timer& Timer::startRoutine() {
-  // perhaps it can be some atomic / global control by main thread / UI thread
-  bool keepWorking{true}; 
+  m_keepRunning = true;
+
   sortEventList().moveToClosestEvent();
-  while (keepWorking) {
-    enterWorkingStage();
+
+  while (m_keepRunning) {
+    waitForNextEvent();
+    if(m_keepRunning) {
+    cout << timeStamp() << "I am working\n";
+      enterWorkingStage();
+    }
   }
   return *this;
 }
@@ -317,4 +335,40 @@ Timer& Timer::saveEvents(const string& fileName, unordered_map<string, function<
 ostream& operator<<(ostream& os, Timer& rhs) {
   os << rhs.timeStamp();
   return os;
+}
+
+ostream& Timer::listNext10Events(ostream& os) {
+  moveToClosestEvent();
+
+  U << os;
+  U.print("\n", 70, true, '+') << "\n";
+  os << "The next 10 events are:\n";
+
+  int count = 0;
+  size_t i = m_currentPosition;
+
+  while (i < m_eventListSize && count < 10) {
+    os << count + 1 << " - " << m_eventsList[i++] << "\n";
+
+    // beyond the boundary of array
+    if(i > m_eventListSize - 1) i = 0;
+
+    count++;
+  }
+  
+  for (size_t i = m_currentPosition; i < m_eventListSize && count < 10; i++) {
+  }
+  U.print("+", 70, true, '+') << "\n\n";
+  return os;
+}
+
+Timer& Timer::stopRoutine() {
+/*   cout << "received stopping signal\n"; */
+  m_keepRunning = false;
+  m_cv.notify_all();
+  return *this;
+}
+
+bool Timer::isRunning() const {
+  return m_keepRunning;
 }
