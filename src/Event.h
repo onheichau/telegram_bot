@@ -1,8 +1,8 @@
 #ifndef EVENT_H__
 #define EVENT_H__
 #include <iostream>
+#include <functional>
 #include <chrono>
-#include "MarketMonitor.h"
 
 struct Event {
   std::function<void()>* m_callback{}; 
