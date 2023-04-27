@@ -11,7 +11,6 @@ class Environment {
   CURL* m_curl{};
   CURLcode m_result{};
   curl_slist* m_header{};
-  std::ofstream m_log{};
   std::string m_responseBuf{};
   char m_errBuffer[CURL_ERROR_SIZE + 1]{0};
 

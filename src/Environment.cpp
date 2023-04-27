@@ -2,6 +2,7 @@
 #include <fstream>
 #include <chrono>
 #include "Environment.h"
+#include "Logger.h"
 #include "Timer.h"
 #include "Utils.h"
 
@@ -27,9 +28,9 @@ Environment& Environment::errorCheck() {
   if(m_result != CURLE_OK) {
     cerr << "libcurl: error code (" << m_result << ") ";
     if(m_errBuffer[0]) {
-      m_log << m_errBuffer << endl;
+      Logger::writeToLog(m_errBuffer) << endl;
     } else {
-      m_log << curl_easy_strerror(m_result) << endl;
+      Logger::writeToLog(curl_easy_strerror(m_result)) << endl;
     }
   }
   return *this;
@@ -38,7 +39,7 @@ Environment& Environment::errorCheck() {
 // ============================ public method   ================================
 Environment::Environment() {
   // file that log the received resource
-  m_log.open(logFile, ios::app);
+/*   m_log.open(logFile, ios::app); */
 
   // curl initialization
   curl_global_init(CURL_GLOBAL_ALL);
@@ -93,7 +94,7 @@ Environment& Environment::writeToResponseBuffer(const string& data) {
 
 Environment& Environment::setOutputToLog() {
   curl_easy_setopt(m_curl, CURLOPT_WRITEFUNCTION, writeResponseToLog_cb);
-  curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, &m_log);
+  curl_easy_setopt(m_curl, CURLOPT_WRITEDATA, Logger::logAddress());
   return *this;
 }
 
@@ -111,19 +112,18 @@ Environment& Environment::clearResponseBuffer() {
 Environment& Environment::createRequest(const string& url) {
   writeToLog("The url is: ") << url.c_str() << endl;
   curl_easy_setopt(m_curl, CURLOPT_URL, url.c_str());
-  m_log << timer.timeStamp() << "created request => " << url << endl;
+  Logger::writeToLog(timer.timeStamp()) << "created request => " << url << endl;
   return *this;
 }
 
 ofstream& Environment::writeToLog(const string& message) {
-  m_log << message;
-  return m_log;
+  return Logger::writeToLog(timer.timeStamp());
 }
 
 Environment& Environment::execute() {
   clearResponseBuffer();
   m_result = curl_easy_perform(m_curl);
-  m_log << timer.timeStamp() << "bytes in response buffer: " << m_responseBuf.length() << endl << endl;
+  Logger::writeToLog(timer.timeStamp()) << "bytes in response buffer: " << m_responseBuf.length() << endl << endl;
   errorCheck();
   return *this;
 }
