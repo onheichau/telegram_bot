@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <functional>
 #include "BotIO.h"
 #include "MarketAsset.h"
 
@@ -51,7 +52,7 @@ public:
   MarketMonitor(const std::string& fileName, const std::string& token, const std::string& chatId);
   ~MarketMonitor();
 
-  std::unordered_map<std::string, function<void()>>& callbackMap();
+  std::unordered_map<std::string, std::function<void()>>& callbackMap();
   
   void sendUsMarketDayReport_cb();
 

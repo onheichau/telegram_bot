@@ -13,7 +13,7 @@ struct MarketAsset {
   bool marketIsOpen{};
   bool needNotification();
   std::string createReport();
-/*   std::string createAlert(); */
+  std::string createAlert();
 };
 
 #endif

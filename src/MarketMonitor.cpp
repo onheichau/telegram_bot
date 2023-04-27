@@ -93,7 +93,8 @@ MarketMonitor& MarketMonitor::updateWatchCase(MarketAsset& watchItem) {
     watchItem.m_currentPrice = extractLatestPrice(watchItem.m_identifier);
     watchItem.m_currentChangePercentage = extractChangePercentage(watchItem.m_identifier);
     watchItem.m_previousClose = extractPreviousClose();
-  } else { writeToLog(timeStamp()) << "<ERROR> fail to fetch valid data from internet over 5 attempts." << endl;
+  } else { 
+    writeToLog(timeStamp()) << "<ERROR> fail to fetch valid data from internet over 5 attempts." << endl;
     writeToLog("See invalid.html for more details") << endl;
     ofstream out("invalid.html");
     out << responseBuffer();

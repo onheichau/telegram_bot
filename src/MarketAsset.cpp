@@ -23,6 +23,11 @@ bool MarketAsset::needNotification() {
 
 string MarketAsset::createReport() {
   string report;
+  return report;
+}
+
+string MarketAsset::createAlert() {
+  string report;
   ofstream O("report.txt");
 
   U << O;
