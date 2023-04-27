@@ -12,6 +12,24 @@ static Environment m_env;
 static string m_apiEndPoint;
 static string m_chatId;
 
+bool BotIO::botInitTest() {
+  bool result{};
+  string testString{};
+  testString += m_apiEndPoint;
+  testString += "getMe?";
+  testString += m_chatId;
+
+  writeToLog(timeStamp()) << "bot initialization test start:\n";
+
+  m_env.setOutputToBuffer();
+  m_env.createRequest(testString).execute();
+
+  // do something.....
+
+  writeToLog(timeStamp()) << "bot initialization test finish\n";
+  return result;
+}
+
 BotIO::BotIO(const string &token, const string &chatId) {
   m_apiEndPoint = "https://api.telegram.org/bot";
   m_apiEndPoint += token;

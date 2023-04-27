@@ -6,8 +6,8 @@
 
 
 class BotIO {
-
 protected:
+
   // returns a string of NOW(time)
   std::string timeStamp();
 
@@ -25,6 +25,7 @@ protected:
   BotIO& sendMessageToTelegram(const std::string& msg);
 
 public:
+  bool botInitTest();
   BotIO(const std::string& token, const std::string& chatId);
   virtual ~BotIO() = default;
 };
