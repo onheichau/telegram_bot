@@ -4,6 +4,7 @@
 #include <mutex>
 #include <string>
 #include <thread>
+#include "Logger.h"
 #include "Timer.h"
 #include "Utils.h"
 
@@ -21,7 +22,9 @@ Timer& Timer::updateToNow() {
   return *this;
 }
 
-Timer::Timer() { }
+Timer::~Timer() {
+  delete[] m_eventsList;
+}
 
 int Timer::currentYear() {
   updateToNow();
@@ -146,22 +149,26 @@ Timer& Timer::enterWorkingStage() {
   int count{};
 
   // busy waiting , ready for executing event
-  while (timeLeftToNextEvent(m_eventsList[m_currentPosition]) >= 0ms) {
-    cout << timeStamp() << "busy waiting\n";
+  while (timeLeftToNextEvent(m_eventsList[m_currentPosition]) >= 0ms && timeLeftToNextEvent(m_eventsList[m_currentPosition]) < 1s) {
     count++;
   }
-  cout << "used " << count << "cpu cycle while busy waiting\n";
 
-  // event start, execute event call back
+  if(count) {
+    Logger::writeToLog(timeStamp()) << "found " << count << "cpu cycle while busy waiting\n" 
+    << "m_current position: " << m_currentPosition << "\n"
+    << m_eventsList[m_currentPosition] << endl;
+  }
+
+  Logger::writeToLog(timeStamp()) << "========================> Start" << endl;
 
   (*(m_eventsList[m_currentPosition].m_callback))();
 
-  // log end
+  Logger::writeToLog(timeStamp()) << "========================> End\n" << endl;
 
-  if(m_currentPosition < m_eventListSize) {
+  if(m_currentPosition < m_eventListSize - 1) {
     m_currentPosition++;
   } else {
-    cout << "start over!\n";
+    Logger::writeToLog(timeStamp()) << "Event list rewinds\n";
     m_currentPosition = 0; // start over from sunday
   }
   return *this;
@@ -206,8 +213,9 @@ Timer& Timer::waitForNextEvent() {
   unique_lock<mutex> lock(m_mutex);
 
   if(waitTime > 100ms) {
-/*     cout << timeStamp() << "ready to sleep for " << seconds(duration_cast<seconds>(waitTime)).count() << " seconds ";
-    cout << "aka " << duration<double, ratio<86400>>(waitTime).count() << "days\n"; */
+    Logger::writeToLog(timeStamp()) << "Sleep for " << seconds(duration_cast<seconds>(waitTime)).count()
+                                    << " seconds " << "aka " << duration<double, ratio<86400>>(waitTime).count() << "days\n";
+                                    Logger::logAddress()->flush();
     m_cv.wait_for(lock, waitTime + buffer, [this]() {return !m_keepRunning;});
   }
   return *this;
@@ -284,7 +292,6 @@ Timer& Timer::startRoutine() {
   while (m_keepRunning) {
     waitForNextEvent();
     if(m_keepRunning) {
-    cout << timeStamp() << "I am working\n";
       enterWorkingStage();
     }
   }

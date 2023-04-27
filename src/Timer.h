@@ -36,10 +36,10 @@ class Timer {
   std::chrono::microseconds timeLeftToNextEvent(const Event& nextEvent);
 
 public:
-  Timer();
+  Timer() = default;
   Timer(const Timer& source) = delete;
   Timer& operator=(const Timer& source) = delete;
-  ~Timer() = default;
+  ~Timer();
   std::string timeStamp();
   std::string getWeekDayName(const unsigned int weekday);
   Timer& registerEvents(const std::string& fileName, std::unordered_map<std::string, std::function<void()>>& callbackMap);
