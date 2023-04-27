@@ -1,5 +1,6 @@
 #include <iostream>
 #include <thread>
+#include "Logger.h"
 #include "MarketMonitor.h"
 #include "BotIO.h"
 #include "Timer.h"
@@ -48,6 +49,7 @@ void UI::eventManagerMenu(BotIO& bot) {
       if(!timer.isRunning()) {
         U << cout;
         cout << "scheduler is now operating.\n";
+        Logger::writeToLog(timer.timeStamp()) << "scheduler thread start\n";
         scheduler = thread(bind(&Timer::startRoutine, &timer));
       } else {
         cout << "scheduler is already operating.\n";
@@ -63,6 +65,7 @@ void UI::eventManagerMenu(BotIO& bot) {
         scheduler.join();
         timer.saveEvents("save.csv", dynamic_cast<MarketMonitor&>(bot).callbackMap());
         cout << "scheduler is terminated safely.\n";
+        Logger::writeToLog(timer.timeStamp()) << "scheduler thread terminated safely\n";
       }
       U.print("+", 70, true, '+') << "\n\n";
       break;
@@ -78,3 +81,12 @@ int UI::ChatGptManagerMenu() {
   return userSelection;
 }
 
+void UI::cleanUp(BotIO& bot) {
+  if(timer.isRunning()) {
+    timer.stopRoutine(); // stop the thread
+    scheduler.join();
+    timer.saveEvents("save.csv", dynamic_cast<MarketMonitor &>(bot).callbackMap());
+    cout << "scheduler is terminated safely.\n";
+    Logger::writeToLog(timer.timeStamp()) << "scheduler thread terminated safely\n";
+  }
+}
